@@ -70,9 +70,6 @@ This application can be deployed online so that anyone can access it. For detail
 2. Select the "Raid Steps" tab
 3. Select a wing, fill in the step details, and click "Add Step" or "Update Step"
 
-## About Snow Crows
-
-Snow Crows is a Guild Wars 2 raid team practicing for tournaments. This application is designed to help the team track and improve their performance in raid wings, with a focus on speed and efficiency.
 
 ## License
 
