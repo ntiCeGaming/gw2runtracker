@@ -1,0 +1,49 @@
+{
+  "name": "gw2-raid-tracker",
+  "version": "1.0.0",
+  "description": "Guild Wars 2 Raid Performance Tracker",
+  "scripts": {
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html",
+    "build-all": "parcel build src/index.html src/*.html --no-source-maps",
+    "build-subdir": "parcel build src/index.html src/*.html --no-source-maps --target subdir",
+    "predeploy": "npm run build-all",
+    "predeploy-subdir": "npm run build-subdir",
+    "deploy": "gh-pages -d dist",
+    "deploy-subdir": "npm run predeploy-subdir && gh-pages -d dist"
+  },
+  "targets": {
+    "default": {
+      "publicUrl": "/"
+    },
+    "subdir": {
+      "publicUrl": "/gw2-raid-tracker"
+    }
+  },
+  "keywords": [
+    "guild wars 2",
+    "raid",
+    "tracker",
+    "performance"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chart.js": "^4.4.0",
+    "date-fns": "^2.30.0",
+    "dexie": "^3.2.4",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.16.0",
+    "styled-components": "^6.0.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
+    "cross-env": "^10.0.0",
+    "gh-pages": "^6.3.0",
+    "parcel": "^2.9.3",
+    "typescript": "^5.2.2"
+  }
+}

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en"><!-- Updated -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Steps for Raid Wings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #c02c38;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .info {
+            background-color: #1976d2;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .success {
+            background-color: #388e3c;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .error {
+            background-color: #d32f2f;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        button {
+            background-color: #c02c38;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #a02530;
+        }
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        .button-container {
+            text-align: center;
+        }
+        #log {
+            background-color: #1a1a1a;
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add Steps for Raid Wings</h1>
+        
+        <div class="info">
+            <strong>ℹ️ What this does:</strong>
+            <ul>
+                <li>Adds predefined steps for raid wings 3-8</li>
+                <li>Does NOT delete any existing data</li>
+                <li>Skips wings that already have steps</li>
+                <li>Each wing will have steps for all major encounters and bosses</li>
+            </ul>
+        </div>
+        
+        <div class="success" id="successMessage">
+            <strong>✅ Success:</strong> Steps have been added successfully for all raid wings!
+        </div>
+        
+        <div class="error" id="errorMessage">
+            <strong>❌ Error:</strong> <span id="errorText"></span>
+        </div>
+        
+        <div class="button-container">
+            <button id="addStepsButton" onclick="addStepsForWings()">Add Steps for Wings 3-8</button>
+            <button onclick="window.close()">Cancel</button>
+        </div>
+        
+        <div id="log"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        async function addStepsForWings() {
+            const addStepsButton = document.getElementById('addStepsButton');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            addStepsButton.disabled = true;
+            addStepsButton.textContent = 'Adding Steps...';
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            try {
+                log('Starting to add steps for wings 3-8...');
+                
+                // Open the database
+                const db = await new Promise((resolve, reject) => {
+                    const request = indexedDB.open('RaidTrackerDatabase', 1);
+                    
+                    request.onerror = () => {
+                        reject(new Error('Failed to open database'));
+                    };
+                    
+                    request.onsuccess = (event) => {
+                        resolve(event.target.result);
+                    };
+                });
+                
+                // Get all raid wings
+                const transaction = db.transaction(['raidWings', 'raidSteps'], 'readwrite');
+                const raidWingsStore = transaction.objectStore('raidWings');
+                const raidStepsStore = transaction.objectStore('raidSteps');
+                
+                const wings = await new Promise((resolve, reject) => {
+                    const request = raidWingsStore.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(new Error('Failed to get raid wings'));
+                });
+                
+                log(`Found ${wings.length} raid wings in the database`);
+                
+                // Process each wing
+                for (const wing of wings) {
+                    // Check if wing already has steps
+                    const existingSteps = await new Promise((resolve, reject) => {
+                        const index = raidStepsStore.index('raidWingId');
+                        const request = index.count(wing.id);
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject(new Error(`Failed to count steps for wing ${wing.id}`));
+                    });
+                    
+                    if (existingSteps > 0) {
+                        log(`Wing ${wing.id} (${wing.name}) already has ${existingSteps} steps. Skipping.`);
+                        continue;
+                    }
+                    
+                    log(`Adding steps for wing ${wing.id} (${wing.name})...`);
+                    
+                    // Add steps based on wing name
+                    if (wing.name.includes('Stronghold of the Faithful') || wing.name.includes('Wing 3')) {
+                        const steps = [
+                            { name: 'Start', description: 'Beginning of the raid', order: 0, raidWingId: wing.id },
+                            { name: 'Escort', description: 'Escort encounter', order: 1, raidWingId: wing.id },
+                            { name: 'Keep Construct', description: 'Second boss', order: 2, raidWingId: wing.id },
+                            { name: 'Xera', description: 'Final boss', order: 3, raidWingId: wing.id }
+                        ];
+                        for (const step of steps) {
+                            await new Promise((resolve, reject) => {
+                                const request = raidStepsStore.add(step);
+                                request.onsuccess = () => {
+                                    log(`  Added step: ${step.name}`);
+                                    resolve();
+                                };
+                                request.onerror = () => reject(new Error(`Failed to add step ${step.name}`));
+                            });
+                        }
+                    } else if (wing.name.includes('Bastion of the Penitent') || wing.name.includes('Wing 4')) {
+                        const steps = [
+                            { name: 'Start', description: 'Beginning of the raid', order: 0, raidWingId: wing.id },
+                            { name: 'Cairn the Indomitable', description: 'First boss', order: 1, raidWingId: wing.id },
+                            { name: 'Mursaat Overseer', description: 'Second boss', order: 2, raidWingId: wing.id },
+                            { name: 'Samarog', description: 'Third boss', order: 3, raidWingId: wing.id },
+                            { name: 'Deimos', description: 'Final boss', order: 4, raidWingId: wing.id }
+                        ];
+                        for (const step of steps) {
+                            await new Promise((resolve, reject) => {
+                                const request = raidStepsStore.add(step);
+                                request.onsuccess = () => {
+                                    log(`  Added step: ${step.name}`);
+                                    resolve();
+                                };
+                                request.onerror = () => reject(new Error(`Failed to add step ${step.name}`));
+                            });
+                        }
+                    } else if (wing.name.includes('Hall of Chains') || wing.name.includes('Wing 5')) {
+                        const steps = [
+                            { name: 'Start', description: 'Beginning of the raid', order: 0, raidWingId: wing.id },
+                            { name: 'Soulless Horror', description: 'First boss', order: 1, raidWingId: wing.id },
+                            { name: 'River of Souls', description: 'Second encounter', order: 2, raidWingId: wing.id },
+                            { name: 'Statues of Grenth', description: 'Third encounter', order: 3, raidWingId: wing.id },
+                            { name: 'Dhuum', description: 'Final boss', order: 4, raidWingId: wing.id }
+                        ];
+                        for (const step of steps) {
+                            await new Promise((resolve, reject) => {
+                                const request = raidStepsStore.add(step);
+                                request.onsuccess = () => {
+                                    log(`  Added step: ${step.name}`);
+                                    resolve();
+                                };
+                                request.onerror = () => reject(new Error(`Failed to add step ${step.name}`));
+                            });
+                        }
+                    } else if (wing.name.includes('Mythwright Gambit') || wing.name.includes('Wing 6')) {
+                        const steps = [
+                            { name: 'Start', description: 'Beginning of the raid', order: 0, raidWingId: wing.id },
+                            { name: 'Conjured Amalgamate', description: 'First boss', order: 1, raidWingId: wing.id },
+                            { name: 'Twin Largos', description: 'Second boss', order: 2, raidWingId: wing.id },
+                            { name: 'Qadim', description: 'Final boss', order: 3, raidWingId: wing.id }
+                        ];
+                        for (const step of steps) {
+                            await new Promise((resolve, reject) => {
+                                const request = raidStepsStore.add(step);
+                                request.onsuccess = () => {
+                                    log(`  Added step: ${step.name}`);
+                                    resolve();
+                                };
+                                request.onerror = () => reject(new Error(`Failed to add step ${step.name}`));
+                            });
+                        }
+                    } else if (wing.name.includes('Key of Ahdashim') || wing.name.includes('Wing 7')) {
+                        const steps = [
+                            { name: 'Start', description: 'Beginning of the raid', order: 0, raidWingId: wing.id },
+                            { name: 'Cardinal Adina', description: 'First boss', order: 1, raidWingId: wing.id },
+                            { name: 'Cardinal Sabir', description: 'Second boss', order: 2, raidWingId: wing.id },
+                            { name: 'Qadim the Peerless', description: 'Final boss', order: 3, raidWingId: wing.id }
+                        ];
+                        for (const step of steps) {
+                            await new Promise((resolve, reject) => {
+                                const request = raidStepsStore.add(step);
+                                request.onsuccess = () => {
+                                    log(`  Added step: ${step.name}`);
+                                    resolve();
+                                };
+                                request.onerror = () => reject(new Error(`Failed to add step ${step.name}`));
+                            });
+                        }
+                    } else if (wing.name.includes('Mount Balrior') || wing.name.includes('Wing 8')) {
+                        const steps = [
+                            { name: 'Start', description: 'Beginning of the raid', order: 0, raidWingId: wing.id },
+                            { name: 'Greer', description: 'First boss', order: 1, raidWingId: wing.id },
+                            { name: 'Decima', description: 'Second boss', order: 2, raidWingId: wing.id },
+                            { name: 'Ura', description: 'Final boss', order: 3, raidWingId: wing.id }
+                        ];
+                        for (const step of steps) {
+                            await new Promise((resolve, reject) => {
+                                const request = raidStepsStore.add(step);
+                                request.onsuccess = () => {
+                                    log(`  Added step: ${step.name}`);
+                                    resolve();
+                                };
+                                request.onerror = () => reject(new Error(`Failed to add step ${step.name}`));
+                            });
+                        }
+                    }
+                }
+                
+                db.close();
+                
+                log('Steps added successfully for all raid wings!');
+                successMessage.style.display = 'block';
+                addStepsButton.textContent = 'Steps Added Successfully!';
+                
+            } catch (error) {
+                log(`Error: ${error.message}`);
+                errorText.textContent = error.message;
+                errorMessage.style.display = 'block';
+                addStepsButton.disabled = false;
+                addStepsButton.textContent = 'Add Steps for Wings 3-8';
+            }
+        }
+    </script>
+</body>
+</html>

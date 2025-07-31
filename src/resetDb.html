@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Database</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #c02c38;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #a02530;
+    }
+  </style>
+</head>
+<body>
+  <h1>Reset Raid Tracker Database</h1>
+  <p>Click the button below to reset the database. This will delete all existing data and reinitialize the database with the latest default values.</p>
+  <button id="resetBtn">Reset Database</button>
+  
+  <script>
+    document.getElementById('resetBtn').addEventListener('click', function() {
+      if (confirm('Are you sure you want to reset the database? All existing data will be lost.')) {
+        // Get all IndexedDB databases
+        indexedDB.databases().then(databases => {
+          // Find our database
+          const ourDb = databases.find(db => db.name === 'RaidTrackerDatabase');
+          
+          if (ourDb) {
+            console.log('Found RaidTrackerDatabase, deleting...');
+            // Delete the database
+            const deleteRequest = indexedDB.deleteDatabase('RaidTrackerDatabase');
+            
+            deleteRequest.onsuccess = function() {
+              console.log('Database deleted successfully');
+              alert('Database has been reset successfully. You will now be redirected to the main application.');
+              // Redirect to the main app - using relative path for better compatibility with subdirectory deployments
+              window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) || '.';
+            };
+            
+            deleteRequest.onerror = function() {
+              console.error('Could not delete database');
+              alert('Failed to reset database. Please check console for errors.');
+            };
+            
+            deleteRequest.onblocked = function() {
+              console.warn('Database deletion was blocked');
+              alert('Please close all other tabs with this site open and try again.');
+            };
+          } else {
+            console.log('RaidTrackerDatabase not found');
+            alert('Database not found. You will be redirected to the main application.');
+            // Use relative path for better compatibility with subdirectory deployments
+            window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) || '.';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

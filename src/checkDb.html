@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Database</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #results {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #2c87c0;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #236d9b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Check Raid Tracker Database</h1>
+  <p>Click the button below to check the contents of the database.</p>
+  <button id="checkBtn">Check Database</button>
+  <button id="backBtn">Back to App</button>
+  
+  <div id="results"></div>
+  
+  <script>
+    const resultsDiv = document.getElementById('results');
+    
+    // Function to log to both console and the results div
+    function log(message, isError = false) {
+      console.log(message);
+      const formattedMessage = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+      resultsDiv.innerHTML += `${isError ? '<span style="color: red;">' : ''}${formattedMessage}${isError ? '</span>' : ''}\n`;
+    }
+    
+    document.getElementById('checkBtn').addEventListener('click', function() {
+      resultsDiv.innerHTML = ''; // Clear previous results
+      log('Checking database...');
+      
+      // Open the database
+      const request = indexedDB.open('RaidTrackerDatabase', 1);
+      
+      request.onerror = function(event) {
+        log('Database error: ' + event.target.error, true);
+      };
+      
+      request.onsuccess = function(event) {
+        const db = event.target.result;
+        log('Database opened successfully');
+        
+        // Check if the raidWings object store exists
+        if (!db.objectStoreNames.contains('raidWings')) {
+          log('raidWings object store not found', true);
+          return;
+        }
+        
+        // Start a transaction to read the raidWings data
+        const transaction = db.transaction(['raidWings'], 'readonly');
+        const store = transaction.objectStore('raidWings');
+        
+        // Get all raid wings
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = function() {
+          const wings = getAllRequest.result;
+          log('All raid wings:');
+          wings.forEach(wing => {
+            log(`ID: ${wing.id}, Name: ${wing.name}, Bosses: ${wing.bosses.join(', ')}`);
+          });
+          
+          // Check if Wing 8 exists
+          const wing8 = wings.find(wing => wing.name.includes('Wing 8'));
+          if (wing8) {
+            log('Wing 8 found:');
+            log(wing8);
+          } else {
+            log('Wing 8 not found in the database', true);
+          }
+        };
+        
+        getAllRequest.onerror = function(event) {
+          log('Error getting raid wings: ' + event.target.error, true);
+        };
+      };
+    });
+    
+    document.getElementById('backBtn').addEventListener('click', function() {
+      // Use relative path for better compatibility with subdirectory deployments
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) || '.';
+    });
+  </script>
+</body>
+</html>

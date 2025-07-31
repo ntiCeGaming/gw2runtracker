@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update Database</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #results {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #2c87c0;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background-color: #236d9b;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Update Raid Tracker Database</h1>
+  <p>This page allows you to check and update the database to ensure Wing 8 is properly included.</p>
+  
+  <button id="checkBtn">Check Database</button>
+  <button id="updateBtn">Add/Update Wing 8</button>
+  <button id="backBtn">Back to App</button>
+  
+  <div id="results"></div>
+  
+  <script>
+    const resultsDiv = document.getElementById('results');
+    
+    // Function to log to both console and the results div
+    function log(message, type = 'info') {
+      console.log(message);
+      const formattedMessage = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+      resultsDiv.innerHTML += `<div class="${className}">${formattedMessage}</div>`;
+    }
+    
+    // Function to check the database
+    function checkDatabase() {
+      resultsDiv.innerHTML = ''; // Clear previous results
+      log('Checking database...');
+      
+      // Open the database
+      const request = indexedDB.open('RaidTrackerDatabase', 1);
+      
+      request.onerror = function(event) {
+        log('Database error: ' + event.target.error, 'error');
+      };
+      
+      request.onsuccess = function(event) {
+        const db = event.target.result;
+        log('Database opened successfully');
+        
+        // Check if the raidWings object store exists
+        if (!db.objectStoreNames.contains('raidWings')) {
+          log('raidWings object store not found', 'error');
+          return;
+        }
+        
+        // Start a transaction to read the raidWings data
+        const transaction = db.transaction(['raidWings'], 'readonly');
+        const store = transaction.objectStore('raidWings');
+        
+        // Get all raid wings
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = function() {
+          const wings = getAllRequest.result;
+          log('All raid wings:');
+          wings.forEach(wing => {
+            log(`ID: ${wing.id || 'N/A'}, Name: ${wing.name}, Bosses: ${wing.bosses ? wing.bosses.join(', ') : 'None'}`);
+          });
+          
+          // Check if Wing 8 exists
+          const wing8 = wings.find(wing => wing.name.includes('Wing 8'));
+          if (wing8) {
+            log('Wing 8 found:', 'success');
+            log(wing8);
+          } else {
+            log('Wing 8 not found in the database', 'error');
+          }
+        };
+        
+        getAllRequest.onerror = function(event) {
+          log('Error getting raid wings: ' + event.target.error, 'error');
+        };
+      };
+    }
+    
+    // Function to update the database with Wing 8
+    function updateDatabase() {
+      resultsDiv.innerHTML = ''; // Clear previous results
+      log('Updating database...');
+      
+      // Open the database
+      const request = indexedDB.open('RaidTrackerDatabase', 1);
+      
+      request.onerror = function(event) {
+        log('Database error: ' + event.target.error, 'error');
+      };
+      
+      request.onsuccess = function(event) {
+        const db = event.target.result;
+        log('Database opened successfully');
+        
+        // Check if the raidWings object store exists
+        if (!db.objectStoreNames.contains('raidWings')) {
+          log('raidWings object store not found', 'error');
+          return;
+        }
+        
+        // Start a transaction to read and update the raidWings data
+        const transaction = db.transaction(['raidWings'], 'readwrite');
+        const store = transaction.objectStore('raidWings');
+        
+        // Get all raid wings
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = function() {
+          const wings = getAllRequest.result;
+          log('Found ' + wings.length + ' raid wings');
+          
+          // Find Wing 8
+          const wing8Index = wings.findIndex(wing => wing.name.includes('Wing 8'));
+          
+          if (wing8Index !== -1) {
+            const wing8 = wings[wing8Index];
+            log('Found Wing 8:', 'success');
+            log(wing8);
+            
+            // Update Wing 8 with correct information
+            const updatedWing8 = {
+              ...wing8,
+              name: 'Mount Balrior (Wing 8)',
+              description: 'The eighth raid wing, featuring Greer, Decima, and Ura.',
+              bosses: ['Greer', 'Decima', 'Ura']
+            };
+            
+            // Update the wing in the database
+            const updateRequest = store.put(updatedWing8);
+            
+            updateRequest.onsuccess = function() {
+              log('Wing 8 updated successfully', 'success');
+            };
+            
+            updateRequest.onerror = function(event) {
+              log('Error updating Wing 8: ' + event.target.error, 'error');
+            };
+          } else {
+            log('Wing 8 not found in the database, adding it now...', 'info');
+            
+            // Generate a new ID (assuming IDs are sequential)
+            let newId = 8;
+            if (wings.length > 0) {
+              // Find the highest ID and add 1
+              const maxId = Math.max(...wings.map(wing => wing.id || 0));
+              newId = maxId + 1;
+            }
+            
+            // Add Wing 8 if it doesn't exist
+            const newWing8 = {
+              id: newId,
+              name: 'Mount Balrior (Wing 8)',
+              description: 'The eighth raid wing, featuring Greer, Decima, and Ura.',
+              bosses: ['Greer', 'Decima', 'Ura'],
+              imageUrl: 'https://wiki.guildwars2.com/images/thumb/5/5f/Dragonstorm_loading_screen.jpg/300px-Dragonstorm_loading_screen.jpg'
+            };
+            
+            log('Adding new Wing 8:', 'info');
+            log(newWing8);
+            
+            const addRequest = store.add(newWing8);
+            
+            addRequest.onsuccess = function() {
+              log('Wing 8 added successfully', 'success');
+            };
+            
+            addRequest.onerror = function(event) {
+              log('Error adding Wing 8: ' + event.target.error, 'error');
+            };
+          }
+        };
+        
+        getAllRequest.onerror = function(event) {
+          log('Error getting raid wings: ' + event.target.error, 'error');
+        };
+        
+        transaction.oncomplete = function() {
+          log('Transaction completed successfully', 'success');
+          log('Please refresh the main application to see the changes.');
+        };
+      };
+    }
+    
+    // Event listeners
+    document.getElementById('checkBtn').addEventListener('click', checkDatabase);
+    document.getElementById('updateBtn').addEventListener('click', updateDatabase);
+    document.getElementById('backBtn').addEventListener('click', function() {
+      // Use relative path for better compatibility with subdirectory deployments
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) || '.';
+    });
+  </script>
+</body>
+</html>

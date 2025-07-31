@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Force Add Wing 8</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+    }
+    h1 {
+      color: #c02c38;
+    }
+    #results {
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      margin-top: 20px;
+      height: 300px;
+      overflow-y: auto;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #c02c38;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background-color: #a02530;
+    }
+    .success {
+      color: #4caf50;
+      font-weight: bold;
+    }
+    .error {
+      color: #f44336;
+      font-weight: bold;
+    }
+    .warning {
+      color: #ff9800;
+      font-weight: bold;
+    }
+    .info {
+      color: #2196f3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Force Add Wing 8 to Database</h1>
+  <p>This tool will completely reset the database and add all wings including Wing 8.</p>
+  <p class="warning">Warning: This will delete all existing data in the database!</p>
+  
+  <button id="resetBtn">Reset Database and Add Wing 8</button>
+  <button id="backBtn">Back to App</button>
+  
+  <div id="results"></div>
+  
+  <script>
+    const resultsDiv = document.getElementById('results');
+    
+    // Function to log to both console and the results div
+    function log(message, type = 'info') {
+      console.log(message);
+      const formattedMessage = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+      resultsDiv.innerHTML += `<div class="${className}">${formattedMessage}</div>`;
+      resultsDiv.scrollTop = resultsDiv.scrollHeight; // Auto-scroll to bottom
+    }
+    
+    // Function to force add Wing 8
+    function forceAddWing8() {
+      log('Starting force add Wing 8 script...', 'info');
+      
+      // Open the database
+      const request = indexedDB.open('RaidTrackerDatabase', 1);
+      
+      request.onerror = function(event) {
+        log('Database error: ' + event.target.error, 'error');
+      };
+      
+      request.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        log('Database upgrade needed - creating object stores', 'info');
+        
+        // Create object stores if they don't exist
+        if (!db.objectStoreNames.contains('raidWings')) {
+          const raidWingsStore = db.createObjectStore('raidWings', { keyPath: 'id', autoIncrement: true });
+          raidWingsStore.createIndex('name', 'name', { unique: false });
+          log('Created raidWings object store', 'success');
+        }
+        
+        if (!db.objectStoreNames.contains('raidSteps')) {
+          const raidStepsStore = db.createObjectStore('raidSteps', { keyPath: 'id', autoIncrement: true });
+          raidStepsStore.createIndex('raidWingId', 'raidWingId', { unique: false });
+          raidStepsStore.createIndex('order', 'order', { unique: false });
+          log('Created raidSteps object store', 'success');
+        }
+        
+        if (!db.objectStoreNames.contains('deathEvents')) {
+          const deathEventsStore = db.createObjectStore('deathEvents', { keyPath: 'id', autoIncrement: true });
+          deathEventsStore.createIndex('runId', 'runId', { unique: false });
+          deathEventsStore.createIndex('timestamp', 'timestamp', { unique: false });
+          log('Created deathEvents object store', 'success');
+        }
+        
+        if (!db.objectStoreNames.contains('raidRuns')) {
+          const raidRunsStore = db.createObjectStore('raidRuns', { keyPath: 'id', autoIncrement: true });
+          raidRunsStore.createIndex('raidWingId', 'raidWingId', { unique: false });
+          raidRunsStore.createIndex('startTime', 'startTime', { unique: false });
+          raidRunsStore.createIndex('status', 'status', { unique: false });
+          log('Created raidRuns object store', 'success');
+        }
+      };
+      
+      request.onsuccess = function(event) {
+        const db = event.target.result;
+        log('Database opened successfully', 'success');
+        
+        // Check if the raidWings object store exists
+        if (!db.objectStoreNames.contains('raidWings')) {
+          log('raidWings object store not found - this should not happen after upgrade', 'error');
+          return;
+        }
+        
+        // Start a transaction to read and update the raidWings data
+        const transaction = db.transaction(['raidWings'], 'readwrite');
+        const store = transaction.objectStore('raidWings');
+        
+        // Get all raid wings
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = function() {
+          const wings = getAllRequest.result;
+          log('Found ' + wings.length + ' raid wings', 'info');
+          
+          // Delete all wings (to reset the database)
+          log('Deleting all wings...', 'warning');
+          store.clear().onsuccess = function() {
+            log('All wings deleted', 'success');
+            
+            // Add all wings back including Wing 8
+            const defaultRaidWings = [
+              {
+                name: 'Spirit Vale (Wing 1)',
+                description: 'The first raid wing in Guild Wars 2, featuring Vale Guardian, Gorseval, and Sabetha.',
+                bosses: ['Vale Guardian', 'Gorseval the Multifarious', 'Sabetha the Saboteur'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/5/54/Spirit_Vale_loading_screen.jpg/300px-Spirit_Vale_loading_screen.jpg'
+              },
+              {
+                name: 'Salvation Pass (Wing 2)',
+                description: 'The second raid wing, featuring Slothasor, Bandit Trio, and Matthias Gabrel.',
+                bosses: ['Slothasor', 'Bandit Trio', 'Matthias Gabrel'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/5/5a/Salvation_Pass_loading_screen.jpg/300px-Salvation_Pass_loading_screen.jpg'
+              },
+              {
+                name: 'Stronghold of the Faithful (Wing 3)',
+                description: 'The third raid wing, featuring Escort, Keep Construct, Twisted Castle, and Xera.',
+                bosses: ['Escort', 'Keep Construct', 'Xera'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/b/b8/Stronghold_of_the_Faithful_loading_screen.jpg/300px-Stronghold_of_the_Faithful_loading_screen.jpg'
+              },
+              {
+                name: 'Bastion of the Penitent (Wing 4)',
+                description: 'The fourth raid wing, featuring Cairn, Mursaat Overseer, Samarog, and Deimos.',
+                bosses: ['Cairn the Indomitable', 'Mursaat Overseer', 'Samarog', 'Deimos'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/0/04/Bastion_of_the_Penitent_loading_screen.jpg/300px-Bastion_of_the_Penitent_loading_screen.jpg'
+              },
+              {
+                name: 'Hall of Chains (Wing 5)',
+                description: 'The fifth raid wing, featuring Soulless Horror, River of Souls, Statues of Grenth, and Dhuum.',
+                bosses: ['Soulless Horror', 'River of Souls', 'Statues of Grenth', 'Dhuum'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/4/4f/Hall_of_Chains_loading_screen.jpg/300px-Hall_of_Chains_loading_screen.jpg'
+              },
+              {
+                name: 'Mythwright Gambit (Wing 6)',
+                description: 'The sixth raid wing, featuring Conjured Amalgamate, Twin Largos, and Qadim.',
+                bosses: ['Conjured Amalgamate', 'Twin Largos', 'Qadim'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/f/f2/Mythwright_Gambit_loading_screen.jpg/300px-Mythwright_Gambit_loading_screen.jpg'
+              },
+              {
+                name: 'The Key of Ahdashim (Wing 7)',
+                description: 'The seventh raid wing, featuring Cardinal Adina, Cardinal Sabir, and Qadim the Peerless.',
+                bosses: ['Cardinal Adina', 'Cardinal Sabir', 'Qadim the Peerless'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/8/8d/The_Key_of_Ahdashim_loading_screen.jpg/300px-The_Key_of_Ahdashim_loading_screen.jpg'
+              },
+              {
+                name: 'Mount Balrior (Wing 8)',
+                description: 'The eighth raid wing, featuring Greer, Decima, and Ura.',
+                bosses: ['Greer', 'Decima', 'Ura'],
+                imageUrl: 'https://wiki.guildwars2.com/images/thumb/5/5f/Dragonstorm_loading_screen.jpg/300px-Dragonstorm_loading_screen.jpg'
+              }
+            ];
+            
+            log('Adding wings back including Wing 8...', 'info');
+            let addedCount = 0;
+            
+            for (const wing of defaultRaidWings) {
+              const addRequest = store.add(wing);
+              
+              addRequest.onsuccess = function() {
+                addedCount++;
+                log(`Added wing: ${wing.name}`, 'success');
+                
+                if (addedCount === defaultRaidWings.length) {
+                  log('All wings added successfully', 'success');
+                  log('Please go back to the main app and refresh the page to see the changes', 'info');
+                }
+              };
+              
+              addRequest.onerror = function(event) {
+                log(`Error adding wing ${wing.name}: ${event.target.error}`, 'error');
+              };
+            }
+          };
+        };
+        
+        getAllRequest.onerror = function(event) {
+          log('Error getting raid wings: ' + event.target.error, 'error');
+        };
+        
+        transaction.oncomplete = function() {
+          log('Transaction completed', 'success');
+        };
+      };
+    }
+    
+    // Event listeners
+    document.getElementById('resetBtn').addEventListener('click', forceAddWing8);
+    document.getElementById('backBtn').addEventListener('click', function() {
+      // Use relative path for better compatibility with subdirectory deployments
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) || '.';
+    });
+  </script>
+</body>
+</html>
