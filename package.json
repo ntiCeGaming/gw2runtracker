@@ -6,11 +6,11 @@
     "start": "parcel src/index.html",
     "build": "parcel build src/index.html",
     "build-all": "parcel build src/index.html src/*.html --no-source-maps",
-    "build-subdir": "parcel build src/index.html src/*.html --no-source-maps --target subdir",
+    "build-subdir": "parcel build src/index.html --public-url /gw2runtracker --dist-dir dist/subdir",
     "predeploy": "npm run build-all",
     "predeploy-subdir": "npm run build-subdir",
     "deploy": "gh-pages -d dist",
-    "deploy-subdir": "npm run predeploy-subdir && gh-pages -d dist"
+    "deploy-subdir": "npm run build-subdir && gh-pages -d dist/subdir"
   },
   "targets": {
     "default": {
