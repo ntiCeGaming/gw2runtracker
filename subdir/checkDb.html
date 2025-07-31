@@ -1,0 +1,11 @@
+<!DOCTYPE html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>Check Database</title><style>body{max-width:800px;margin:0 auto;padding:20px;font-family:Arial,sans-serif}#results{white-space:pre-wrap;background-color:#f5f5f5;border-radius:5px;margin-top:20px;padding:15px;font-family:monospace}button{color:#fff;cursor:pointer;background-color:#2c87c0;border:none;border-radius:4px;margin-right:10px;padding:10px 20px;font-size:16px}button:hover{background-color:#236d9b}</style><body>
+  <h1>Check Raid Tracker Database</h1>
+  <p>Click the button below to check the contents of the database.</p>
+  <button id=checkBtn>Check Database</button>
+  <button id=backBtn>Back to App</button>
+  
+  <div id=results></div>
+  
+  <script>let resultsDiv=document.getElementById("results");function log(e,n=!1){console.log(e);let t="object"==typeof e?JSON.stringify(e,null,2):e;resultsDiv.innerHTML+=`${n?'<span style="color: red;">':""}${t}${n?"</span>":""}
+`}document.getElementById("checkBtn").addEventListener("click",function(){resultsDiv.innerHTML="",log("Checking database...");let e=indexedDB.open("RaidTrackerDatabase",1);e.onerror=function(e){log("Database error: "+e.target.error,!0)},e.onsuccess=function(e){let n=e.target.result;if(log("Database opened successfully"),!n.objectStoreNames.contains("raidWings"))return void log("raidWings object store not found",!0);let t=n.transaction(["raidWings"],"readonly").objectStore("raidWings").getAll();t.onsuccess=function(){let e=t.result;log("All raid wings:"),e.forEach(e=>{log(`ID: ${e.id}, Name: ${e.name}, Bosses: ${e.bosses.join(", ")}`)});let n=e.find(e=>e.name.includes("Wing 8"));n?(log("Wing 8 found:"),log(n)):log("Wing 8 not found in the database",!0)},t.onerror=function(e){log("Error getting raid wings: "+e.target.error,!0)}}}),document.getElementById("backBtn").addEventListener("click",function(){window.location.href=window.location.pathname.substring(0,window.location.pathname.lastIndexOf("/"))||"."});</script>
+
