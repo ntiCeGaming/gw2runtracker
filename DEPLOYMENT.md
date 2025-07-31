@@ -80,7 +80,7 @@ This will create a `dist` directory with all the necessary files for deployment.
        "publicUrl": "/"
      },
      "subdir": {
-       "publicUrl": "/gw2-raid-tracker"
+       "publicUrl": "/gw2runtracker"
      }
    }
    ```
@@ -95,7 +95,7 @@ This will create a `dist` directory with all the necessary files for deployment.
    ```bash
    npm run deploy-subdir
    ```
-   This will build the application with the proper subdirectory path (`/gw2-raid-tracker`) using the Parcel target configuration and deploy it to the gh-pages branch.
+   This will build the application with the proper subdirectory path (`/gw2runtracker`) using the Parcel target configuration and deploy it to the gh-pages branch.
 
 4. **Configure GitHub Pages**
    - Go to your repository settings
@@ -134,7 +134,7 @@ The application has been configured to support deployment in subdirectories:
 npm run build-subdir
 ```
 
-This script uses Parcel's target configuration to set the `publicUrl` to `/gw2-raid-tracker` and builds the application. You can modify the `publicUrl` in the `targets.subdir` section of `package.json` to use a different subdirectory path if needed.
+This script uses Parcel's target configuration to set the `publicUrl` to `/gw2runtracker` and builds the application. You can modify the `publicUrl` in the `targets.subdir` section of `package.json` to use a different subdirectory path if needed.
 
 ### Build Issues
 
